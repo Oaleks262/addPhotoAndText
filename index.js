@@ -16,7 +16,7 @@ const __dirname = dirname(__filename);
 
 // Load .env
 dotenv.config();
-const openaiApiKey = process.env.OPENAI_API_KEY;
+const openaiApiKey = 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;
 
 const app = express();
 const port = 5000;
