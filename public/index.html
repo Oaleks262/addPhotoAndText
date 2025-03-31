@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Обрізка + Перефразування</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2rem;
+            background-color: #f7f7f7;
+            color: #333;
+        }
+        h2 {
+            color: #2c3e50;
+        }
+        form {
+            margin-bottom: 2rem;
+            background: #fff;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        input[type="text"], textarea, input[type="file"] {
+            width: 100%;
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 0.5rem 1rem;
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #downloadLinks a {
+            display: block;
+            margin-top: 0.5rem;
+            color: #2980b9;
+        }
+        pre {
+            background: #eeeeee;
+            padding: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: Consolas, monospace;
+        }
+        #result {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: Consolas, monospace;
+        }
+    </style>
+</head>
+<body>
+    <h2>Завантажте зображення</h2>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="imageInput" name="images" multiple required>
+        <button type="submit">Завантажити</button>
+    </form>
+    <p id="status"></p>
+    <div id="downloadLinks"></div>
+
+    <hr>
+
+    <h2>Перефразуйте текст</h2>
+    <form id="paraphraseForm">
+        <input type="text" id="title" placeholder="Заголовок" required><br><br>
+        <textarea id="content" rows="4" cols="50" placeholder="Текст для перефразування" required></textarea><br>
+        <button type="submit">Перефразувати</button>
+    </form>
+    <div id="result"></div>
+
+    <hr>
+
+    <h2>Шаблон опису</h2>
+    <pre>
+        &lt;h2&gt;&lt;/h2&gt;
+
+        &lt;p class="ptovar"&gt;&lt;/p&gt;
+
+        &lt;p style="text-align: center;"&gt;&lt;img alt="" src="/seo_images/pictures/gadgets/.webp" style="width: 800px;" loading="lazy"&gt;&lt;/p&gt;
+
+        *информация о товаре может изменяться или дополняться производителем без уведомления.
+    </pre>
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            const files = document.getElementById('imageInput').files;
+            for (let file of files) formData.append('images', file);
+
+            document.getElementById('status').innerText = 'Обробка...';
+            const response = await fetch('/upload', { method: 'POST', body: formData });
+
+            const data = await response.json();
+            if (data.archive) {
+                const link = document.createElement('a');
+                link.href = data.archive;
+                link.download = 'images.zip';
+                link.innerText = '⬇ Завантажити архів';
+                document.getElementById('downloadLinks').appendChild(link);
+                document.getElementById('status').innerText = 'Готово!';
+            } else {
+                document.getElementById('status').innerText = 'Помилка!';
+            }
+        });
+
+        document.getElementById('paraphraseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+
+            const response = await fetch('/paraphrase', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, content }),
+            });
+
+            const data = await response.json();
+            document.getElementById('result').innerHTML = data.html || 'Помилка!';
+        });
+    </script>
+</body>
+</html>
