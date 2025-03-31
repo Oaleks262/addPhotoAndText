@@ -19,7 +19,7 @@ dotenv.config();
 const openaiApiKey = process.env.OPENAI_API_KEY;
 
 const app = express();
-const port = 3000;
+const port = 5000;
 
 const upload = multer({ dest: 'uploads/' });
 
