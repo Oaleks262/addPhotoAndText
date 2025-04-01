@@ -105,10 +105,6 @@ app.post('/paraphrase', async (req, res) => {
         const resultHtml = `
             <h2>${title}</h2>
             <p class="ptovar">${paraphrasedText}</p>
-            <p style="text-align: center;">
-                <img alt="" src="/seo_images/pictures/gadgets/.webp" style="width: 800px;" loading="lazy">
-            </p>
-            *информация о товаре может изменяться или дополняться производителем без уведомления.
         `;
 
         res.json({ html: resultHtml });
