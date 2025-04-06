@@ -92,7 +92,7 @@ app.post('/paraphrase', async (req, res) => {
 <h2>${titles[i]}</h2>
 <p class="ptovar">${contents[i]}</p>
 <p style="text-align: center;">
-  <img alt="" src="/seo_images/pictures/gadgets/${imageName}" style="width: 800px;" loading="lazy">
+  <img alt="" src="/seo_images/pictures/gadgets//${imageName}" style="width: 800px;" loading="lazy">
 </p>`;
 
             const prompt = `Перефразируй текст внутри HTML-тегов. Сохрани всю разметку и структуру. Ответ верни как HTML. Пиши только на русском языке.\n\n${htmlTemplate}`;
