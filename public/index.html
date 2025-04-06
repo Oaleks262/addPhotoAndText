@@ -53,17 +53,13 @@
         }
         #result {
             margin-top: 1rem;
-            padding: 1rem;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-family: Consolas, monospace;
         }
     </style>
 </head>
 <body>
     <h2>Завантажте зображення</h2>
     <form id="uploadForm" enctype="multipart/form-data">
+        <input type="text" id="baseName" placeholder="Назва (наприклад Xiaomi Mi 7)" required>
         <input type="file" id="imageInput" name="images" multiple required>
         <button type="submit">Завантажити</button>
     </form>
@@ -72,38 +68,48 @@
 
     <hr>
 
-    <h2>Перефразуйте текст</h2>
+    <h2>Перефразуйте 10 пар (Заголовок + Опис)</h2>
     <form id="paraphraseForm">
-        <input type="text" id="title" placeholder="Заголовок" required><br><br>
-        <textarea id="content" rows="4" cols="50" placeholder="Текст для перефразування" required></textarea><br>
-        <button type="submit">Перефразувати</button>
+        <div id="fieldsContainer"></div>
+        <button type="submit">Перефразувати всі</button>
     </form>
+
     <div id="result"></div>
 
-    <hr>
-
-    <h2>Шаблон опису</h2>
-    <pre>
-        &lt;h2&gt;&lt;/h2&gt;
-
-        &lt;p class="ptovar"&gt;&lt;/p&gt;
-
-        &lt;p style="text-align: center;"&gt;&lt;img alt="" src="/seo_images/pictures/gadgets/.webp" style="width: 800px;" loading="lazy"&gt;&lt;/p&gt;
-
-        *информация о товаре может изменяться или дополняться производителем без уведомления.
-    </pre>
     <script>
+        const container = document.getElementById('fieldsContainer');
+        for (let i = 0; i < 10; i++) {
+            container.innerHTML += `
+                <div style="margin-bottom: 1.5rem;">
+                    <input type="text" name="title${i}" placeholder="Заголовок ${i + 1}">
+                    <textarea name="content${i}" placeholder="Опис ${i + 1}" rows="3"></textarea>
+                </div>
+            `;
+        }
+
+        let uploadedFileNames = [];
+
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData();
             const files = document.getElementById('imageInput').files;
+            const baseName = document.getElementById('baseName').value;
+
+            if (!baseName.trim()) {
+                alert('Будь ласка, введіть назву');
+                return;
+            }
+
+            formData.append('baseName', baseName);
             for (let file of files) formData.append('images', file);
 
             document.getElementById('status').innerText = 'Обробка...';
-            const response = await fetch('/upload', { method: 'POST', body: formData });
 
+            const response = await fetch('/upload', { method: 'POST', body: formData });
             const data = await response.json();
+
             if (data.archive) {
+                uploadedFileNames = data.fileNames || [];
                 const link = document.createElement('a');
                 link.href = data.archive;
                 link.download = 'images.zip';
@@ -117,17 +123,44 @@
 
         document.getElementById('paraphraseForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const title = document.getElementById('title').value;
-            const content = document.getElementById('content').value;
+
+            const titles = [], contents = [];
+            for (let i = 0; i < 10; i++) {
+                const title = document.querySelector(`[name=title${i}]`).value.trim();
+                const content = document.querySelector(`[name=content${i}]`).value.trim();
+
+                if (title && content) {
+                    titles.push(title);
+                    contents.push(content);
+                }
+            }
+
+            if (titles.length === 0) {
+                document.getElementById('result').innerText = 'Будь ласка, заповніть хоча б одну пару.';
+                return;
+            }
+
+            document.getElementById('result').innerHTML = '⏳ Обробка...';
 
             const response = await fetch('/paraphrase', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, content }),
+                body: JSON.stringify({ titles, contents, fileNames: uploadedFileNames })
             });
 
             const data = await response.json();
-            document.getElementById('result').innerHTML = data.html || 'Помилка!';
+
+            if (data.htmlBlocks && Array.isArray(data.htmlBlocks)) {
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = '';
+                data.htmlBlocks.forEach(block => {
+                    const pre = document.createElement('pre');
+                    pre.textContent = block;
+                    resultDiv.appendChild(pre);
+                });
+            } else {
+                document.getElementById('result').innerText = '❌ Помилка при перефразуванні';
+            }
         });
     </script>
 </body>
