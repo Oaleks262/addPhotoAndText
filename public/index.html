@@ -54,13 +54,64 @@
         #result {
             margin-top: 1rem;
         }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 1rem 0;
+            display: none;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .drag-drop-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            margin: 1rem 0;
+            transition: border-color 0.3s ease;
+        }
+        .drag-drop-area.dragover {
+            border-color: #3498db;
+            background-color: #f8f9fa;
+        }
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 1rem 0;
+        }
+        .preview-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
     <h2>Завантажте зображення</h2>
     <form id="uploadForm" enctype="multipart/form-data">
         <input type="text" id="baseName" placeholder="Назва (наприклад Xiaomi Mi 7)" required>
-        <input type="file" id="imageInput" name="images" multiple required>
+        
+        <div class="drag-drop-area" id="dragDropArea">
+            <p>Перетягніть файли сюди або</p>
+            <input type="file" id="imageInput" name="images" multiple required accept="image/*">
+        </div>
+        
+        <div id="previewContainer" class="preview-container"></div>
+        
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
         <button type="submit">Завантажити</button>
     </form>
     <p id="status"></p>
@@ -89,6 +140,44 @@
         }
 
         let uploadedFileNames = [];
+        
+        // Drag and drop functionality
+        const dragDropArea = document.getElementById('dragDropArea');
+        const imageInput = document.getElementById('imageInput');
+        const previewContainer = document.getElementById('previewContainer');
+        
+        dragDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dragDropArea.classList.add('dragover');
+        });
+        
+        dragDropArea.addEventListener('dragleave', () => {
+            dragDropArea.classList.remove('dragover');
+        });
+        
+        dragDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragDropArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            imageInput.files = files;
+            showPreview(files);
+        });
+        
+        imageInput.addEventListener('change', (e) => {
+            showPreview(e.target.files);
+        });
+        
+        function showPreview(files) {
+            previewContainer.innerHTML = '';
+            for (let file of files) {
+                if (file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.className = 'preview-image';
+                    img.src = URL.createObjectURL(file);
+                    previewContainer.appendChild(img);
+                }
+            }
+        }
 
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -105,10 +194,15 @@
             for (let file of files) formData.append('images', file);
 
             document.getElementById('status').innerText = 'Обробка...';
+            document.getElementById('progressBar').style.display = 'block';
+            document.getElementById('progressFill').style.width = '20%';
 
+            document.getElementById('progressFill').style.width = '60%';
             const response = await fetch('/upload', { method: 'POST', body: formData });
             const data = await response.json();
 
+            document.getElementById('progressFill').style.width = '100%';
+            
             if (data.archive) {
                 uploadedFileNames = data.fileNames || [];
                 const link = document.createElement('a');
@@ -117,8 +211,13 @@
                 link.innerText = '⬇ Завантажити архів';
                 document.getElementById('downloadLinks').appendChild(link);
                 document.getElementById('status').innerText = 'Готово!';
+                
+                setTimeout(() => {
+                    document.getElementById('progressBar').style.display = 'none';
+                }, 1000);
             } else {
-                document.getElementById('status').innerText = 'Помилка!';
+                document.getElementById('status').innerText = data.error || 'Помилка!';
+                document.getElementById('progressBar').style.display = 'none';
             }
         });
 
